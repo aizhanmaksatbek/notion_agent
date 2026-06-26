@@ -1,7 +1,9 @@
 from langchain.agents import create_agent
 from app.agent.prompts import SYSTEM_PROMPT
+from app.schemas.schemas import AgentOutput, PromptInstruction
 from app.notion_mcp.db import content
 from langchain.tools import tool
+from langchain_core.messages.tool import ToolMessage
 
 
 @tool
@@ -24,7 +26,18 @@ agent = create_agent(
 
 
 def call_agent(prompt: str):
-    result = agent.invoke(
+    execution_result = list()
+    agent_output = agent.invoke(
         {"messages": [{"role": "user", "content": prompt}]}
     )
-    return result["messages"][-1].content_blocks
+
+    for output in agent_output["messages"]:
+        if isinstance(output, ToolMessage):
+            instruction = {
+                "instruction": output.name,
+                "status": output.status
+                }
+            PromptInstruction.model_validate(instruction)
+            execution_result.append(instruction)
+
+    return AgentOutput(prompt=prompt, instructions=execution_result)

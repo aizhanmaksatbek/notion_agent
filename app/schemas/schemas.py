@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Tuple, List
+from typing import List
 
 
 class InputPrompt(BaseModel):
@@ -8,8 +8,9 @@ class InputPrompt(BaseModel):
 
 class PromptInstruction(BaseModel):
     instruction: str
-    status: Tuple
+    status: str
 
 
 class AgentOutput(BaseModel):
-    result: List[PromptInstruction]
+    prompt: str
+    instructions: List[PromptInstruction]
