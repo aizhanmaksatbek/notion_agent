@@ -8,3 +8,10 @@ fastapi[standard]
 
 # Data
 pydantic
+
+# Memory
+langgraph-checkpoint-postgres
+
+# Postgresql - migration
+sqlmodel
+alembic
