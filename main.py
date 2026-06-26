@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.schemas.schemas import InputPrompt, AgentOutput
 from app.agent.agent import call_agent
 import uvicorn
+from langchain_core.utils.uuid import uuid7
 
 app = FastAPI()
 
@@ -11,7 +12,8 @@ def home(prompt: InputPrompt):
     """
     Example prompt: Find articles related to personal expenses?
     """
-    result = call_agent(prompt.text)
+    config = {"configurable": {"thread_id": str(uuid7())}}
+    result = call_agent(prompt.text, config=config)
     return result
 
 

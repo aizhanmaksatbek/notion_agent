@@ -4,6 +4,7 @@ from app.schemas.schemas import AgentOutput, PromptInstruction
 from app.notion_mcp.db import content
 from langchain.tools import tool
 from langchain_core.messages.tool import ToolMessage
+from langgraph.checkpoint.memory import InMemorySaver
 
 
 @tool
@@ -22,15 +23,17 @@ agent = create_agent(
     model="openai:gpt-5.5",
     tools=[search_articles, connect_db],
     system_prompt=SYSTEM_PROMPT,
+    checkpointer=InMemorySaver(),
 )
 
 
-def call_agent(prompt: str):
+def call_agent(prompt: str, config: dict):
     execution_result = list()
-    agent_output = agent.invoke(
-        {"messages": [{"role": "user", "content": prompt}]}
-    )
 
+    agent_output = agent.invoke(
+        {"messages": [{"role": "user", "content": prompt}]},
+        config=config
+    )
     for output in agent_output["messages"]:
         if isinstance(output, ToolMessage):
             instruction = {
