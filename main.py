@@ -11,5 +11,5 @@ def home(prompt: InputPrompt):
     """
     Example prompt: Find articles related to personal expenses?
     """
-    result = call_agent(prompt)
+    result = call_agent(prompt.text)
     return {"message": result}
