@@ -4,11 +4,11 @@ from typing import Any
 
 from sqlmodel import Session, create_engine, select
 
-from app.config.settings import DB_URL
+from app.config.settings import SQLALCHEMY_DB_URL
 from app.memory.models import CapabilityMemory, ExecutionMemory
 
 
-engine = create_engine(DB_URL)
+engine = create_engine(SQLALCHEMY_DB_URL)
 
 
 def normalize_instruction(text: str) -> str:

@@ -30,15 +30,33 @@ class GitHubClient:
             "X-GitHub-Api-Version": "2022-11-28",
         }
 
+    def _resolve_path(self, path: str, extra: dict | None = None) -> str:
+        values = {"owner": self.owner, "repo": self.repo, **(extra or {})}
+        return path.format(**values)
+
+    def verify_repository(self) -> dict[str, Any]:
+        """Validate token access and repo configuration."""
+        if not self.owner or not self.repo:
+            raise GitHubAPIError(
+                400,
+                "GITHUB_OWNER and GITHUB_REPO must be set (repo name only, not a full URL).",
+            )
+        if not GITHUB_TOKEN:
+            raise GitHubAPIError(401, "GITHUB_TOKEN is not configured.")
+
+        return self.request("GET", "/repos/{owner}/{repo}")
+
     def request(
         self,
         method: str,
         path: str,
         params: dict[str, Any] | None = None,
         json_body: dict[str, Any] | None = None,
+        *,
+        path_params: dict[str, Any] | None = None,
     ) -> dict[str, Any] | list[Any]:
-        path = path.format(owner=self.owner, repo=self.repo)
-        url = f"{self.BASE_URL}{path}"
+        resolved_path = self._resolve_path(path, path_params)
+        url = f"{self.BASE_URL}{resolved_path}"
         self._call_count += 1
 
         with httpx.Client(timeout=30.0) as client:
@@ -56,7 +74,10 @@ class GitHubClient:
                 detail = response.json().get("message", detail)
             except json.JSONDecodeError:
                 pass
-            raise GitHubAPIError(response.status_code, detail)
+            raise GitHubAPIError(
+                response.status_code,
+                f"{detail} (url={url})",
+            )
 
         if response.status_code == 204:
             return {"status": "ok"}
@@ -128,6 +149,13 @@ class GitHubClient:
     def list_labels(self) -> list[dict]:
         return self.request("GET", "/repos/{owner}/{repo}/labels", params={"per_page": 100})
 
+    def list_milestones(self, state: str = "open") -> list[dict]:
+        return self.request(
+            "GET",
+            "/repos/{owner}/{repo}/milestones",
+            params={"state": state, "per_page": 100},
+        )
+
     def create_label(self, name: str, color: str = "ededed", description: str = "") -> dict:
         return self.request(
             "POST",
@@ -147,15 +175,13 @@ class GitHubClient:
     def execute_spec(self, spec: dict[str, Any], params: dict[str, Any] | None = None) -> Any:
         """Run a synthesized API capability."""
         params = params or {}
-        path = spec["path"].format(owner=self.owner, repo=self.repo, **params)
-        method = spec["method"]
-        query = spec.get("query")
-        body = spec.get("body")
-
-        if body:
-            body = json.loads(json.dumps(body).format(**params))
-
-        return self.request(method, path, params=query, json_body=body)
+        return self.request(
+            spec["method"],
+            spec["path"],
+            params=spec.get("query"),
+            json_body=spec.get("body"),
+            path_params=params,
+        )
 
 
 class GitHubAPIError(Exception):

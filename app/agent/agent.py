@@ -106,6 +106,7 @@ def call_agent(prompt: str) -> ExecutionReport:
     )
 
     started = time.perf_counter()
+    client.verify_repository()
 
     with PostgresStore.from_conn_string(DB_URL) as store:
         store.setup()
