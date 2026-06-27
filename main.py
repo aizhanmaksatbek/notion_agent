@@ -1,19 +1,27 @@
 from fastapi import FastAPI
-from app.schemas.schemas import InputPrompt, AgentOutput
+
 from app.agent.agent import call_agent
+from app.memory.store import memory_snapshot
+from app.schemas.schemas import AgentOutput, InputPrompt, MemorySnapshot
+
 import uvicorn
 
+app = FastAPI(title="GitHub Platform Agent")
 
-app = FastAPI()
 
-
-@app.post("/", response_class=AgentOutput)
-def home(prompt: InputPrompt):
+@app.post("/", response_model=AgentOutput)
+def execute_instruction(prompt: InputPrompt):
     """
-    Example prompt: Find articles related to personal expenses?
+    Example: Create a bug report for the login timeout issue.
     """
-    result = call_agent(prompt.text)
-    return {"message": result}
+    report = call_agent(prompt.text)
+    return AgentOutput(report=report)
+
+
+@app.get("/memory", response_model=MemorySnapshot)
+def get_memory():
+    snapshot = memory_snapshot()
+    return MemorySnapshot(**snapshot)
 
 
 if __name__ == "__main__":

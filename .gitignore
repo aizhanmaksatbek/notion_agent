@@ -1,3 +1,4 @@
 .venv*
+.env
 app/config/secrets.py
 __pycache__
